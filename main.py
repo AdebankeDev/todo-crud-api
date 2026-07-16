@@ -62,8 +62,18 @@ def health():
     summary="Get all tasks",
     description="Returns a list of all tasks."
 )
-def get_tasks():
-    return tasks
+def get_tasks(done: bool = None):
+
+    if done is None:
+        return tasks
+
+    filtered_tasks = []
+
+    for task in tasks:
+        if task["done"] == done:
+            filtered_tasks.append(task)
+
+    return filtered_tasks
 
 
 @app.get(
@@ -154,3 +164,23 @@ def delete_task(task_id: int):
         status_code=404,
         detail=f"Task {task_id} not found"
     )
+
+
+@app.get(
+    "/stats",
+    summary="Task statistics",
+    description="Returns statistics about all tasks."
+)
+def get_stats():
+
+    total = len(tasks)
+
+    done = sum(1 for task in tasks if task["done"])
+
+    open_tasks = total - done
+
+    return {
+        "total": total,
+        "done": done,
+        "open": open_tasks
+    }

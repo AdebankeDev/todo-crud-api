@@ -1,11 +1,47 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
+import sqlite3
+
 
 app = FastAPI(
     title="Task API",
     description="A simple in-memory CRUD API for managing tasks.",
     version="1.0.0"
 )
+
+# DATABASE IMPLEMENTATION
+
+DATABASE = "tasks.db"
+
+connection = sqlite3.connect(DATABASE)
+cursor = connection.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    done BOOLEAN NOT NULL
+)
+""")
+
+# To get the number of rows in table tasks
+
+cursor.execute("SELECT COUNT(*) FROM tasks")
+count = cursor.fetchone()[0]
+
+if count == 0:
+    sample_tasks = [
+        ("Learn FastAPI", False),
+        ("Build CRUD API", False),
+        ("Push project to GitHub", True),
+    ]
+
+    cursor.executemany(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+        sample_tasks
+    )
+
+connection.commit()
 
 class TaskCreate(BaseModel):
     title: str

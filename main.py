@@ -185,26 +185,30 @@ def create_task(task: TaskCreate):
     description="Updates the title and completion status of a task."
 )
 def update_task(task_id: int, updated_task: TaskUpdate):
+    
+    if updated_task.title.strip() == "":
+        raise HTTPException(
+            status_code=400,
+            detail="Title cannot be empty"
+        )
 
-    for task in tasks:
+    cursor.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+                   (updated_task.title, updated_task.done, task_id))
+    connection.commit()
 
-        if task["id"] == task_id:
-
-            if updated_task.title.strip() == "":
-                raise HTTPException(
-                    status_code=400,
-                    detail="Title cannot be empty"
-                )
-
-            task["title"] = updated_task.title
-            task["done"] = updated_task.done
-
-            return task
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Task {task_id} not found"
-    )
+    if cursor.rowcount == 0:
+        raise HTTPException(
+                status_code=404,
+                detail=f"Task {task_id} not found"
+            )        
+    return {
+        "id": task_id,
+        "title": updated_task.title,
+        "done": updated_task.done
+    }
+    
+                           
+    
 
 
 @app.delete(
@@ -215,18 +219,14 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 )
 def delete_task(task_id: int):
 
-    for task in tasks:
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    connection.commit()
 
-        if task["id"] == task_id:
-
-            tasks.remove(task)
-
-            return
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Task {task_id} not found"
-    )
+    if cursor.rowcount == 0:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found"
+        )
 
 
 @app.get(
@@ -236,9 +236,9 @@ def delete_task(task_id: int):
 )
 def get_stats():
 
-    total = len(tasks)
+    total = cursor.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
 
-    done = sum(1 for task in tasks if task["done"])
+    done = cursor.execute("SELECT COUNT(*) FROM tasks WHERE done = 1").fetchone()[0]
 
     open_tasks = total - done
 

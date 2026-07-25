@@ -1,123 +1,290 @@
 # Task API
 
-A small CRUD API for managing a to-do list, built with **FastAPI**. Data is stored in memory only — it resets every time the server restarts.
+A RESTful CRUD API for managing a to-do list, built with **FastAPI** and **SQLite**. This project demonstrates how to build a backend API with persistent data storage using SQL instead of an in-memory Python list.
 
-Built as part of the FlyRank AI Backend AI Engineering internship, Week 2 · Assignment BE-01.
+Built as part of the **FlyRank AI Backend Engineering Internship** – **Week 3: Connecting Your CRUD to the Database**.
 
 ---
 
-## Tech stack
+# Tech Stack
 
 - Python 3.10+
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [uvicorn](https://www.uvicorn.org/) (ASGI server)
-- [uv](https://docs.astral.sh/uv/) (package/environment manager)
+- FastAPI
+- SQLite (`sqlite3`)
+- Uvicorn (ASGI server)
+- uv (package and environment manager)
 
 ---
 
-## How to run
+# Why SQLite?
 
-1. Install [uv](https://docs.astral.sh/uv/) if you don't already have it.
-2. Clone this repo and enter the folder:
-   ```bash
-   git clone https://github.com/AdebankeDev/todo-crud-api.git
-   cd todo-crud-api
-   ```
-3. Start the server:
-   ```bash
-   uv run uvicorn main:app --reload --port 8000
-   ```
-4. Open **http://localhost:8000/docs** to explore and test every endpoint interactively via Swagger UI.
+SQLite was chosen because it is a lightweight, serverless relational database that stores all data in a single file (`tasks.db`). It requires no separate database server, making it ideal for learning backend development and building small applications.
 
-That's the one documented command — `uv run uvicorn main:app --reload --port 8000` — no manual virtual environment activation needed.
+Compared to the Week 2 implementation that stored tasks in a Python list, SQLite provides **persistent storage**, so tasks remain available even after restarting the application.
 
 ---
 
-## Endpoints
+# Project Structure
 
-| Method | Path          | Description                        | Success | Errors        |
-|--------|---------------|-------------------------------------|---------|----------------|
-| GET    | `/`           | API info                            | 200     | —              |
-| GET    | `/health`     | Health check                        | 200     | —              |
-| GET    | `/tasks`      | List all tasks (optional `?done=true/false` filter) | 200 | — |
-| GET    | `/stats`      | Task counts: total, done, open | 200 | — |
-| GET    | `/tasks/{id}` | Get one task by id                  | 200     | 404 if not found |
-| POST   | `/tasks`      | Create a new task                   | 201     | 400 if title missing/empty |
-| PUT    | `/tasks/{id}` | Replace a task's title and done status | 200  | 400 invalid body, 404 if not found |
-| DELETE | `/tasks/{id}` | Delete a task                       | 204     | 404 if not found |
-
-Each task has the shape:
-
-```json
-{ "id": 1, "title": "Buy milk", "done": false }
+```text
+task-api/
+│
+├── main.py
+├── README.md
+├── .gitignore
+├── images/
+│   ├── swagger-ui.png
+│   └── db-browser.png
+└── tasks.db (created automatically)
 ```
 
 ---
 
-## Extras (optional)
+# Database
 
-- **Filter by status:** `GET /tasks?done=true` returns only completed tasks, `GET /tasks?done=false` returns only open tasks. `done` is a query parameter — omitting it returns the full list, unfiltered. Implemented with `done: Optional[bool] = None` in the route function; FastAPI infers it as a query parameter because it isn't part of the path and isn't a Pydantic model.
+The application stores all tasks in a SQLite database file named **`tasks.db`**.
+
+When the application starts, it automatically:
+
+1. Creates the SQLite database if it does not exist.
+2. Creates the `tasks` table if it does not exist.
+3. Seeds the database with three example tasks **only when the table is empty**.
+
+Because `tasks.db` is included in `.gitignore`, every developer who clones the repository starts with a fresh database that is created automatically.
+
+---
+
+# Running the Project
+
+## Clone the repository
 
 ```bash
-curl -i "http://localhost:8000/tasks?done=true"
+git clone https://github.com/AdebankeDev/todo-crud-api.git
+cd todo-crud-api
 ```
 
-- **Stats endpoint:** `GET /stats` returns computed counts rather than raw stored data — the server does the counting instead of the client.
+## Start the API
 
 ```bash
-curl -i http://localhost:8000/stats
+uv run uvicorn main:app --reload
 ```
 
-Response:
+## Open Swagger UI
 
-```json
-{ "total": 5, "done": 2, "open": 3 }
 ```
+http://127.0.0.1:8000/docs
+```
+
+FastAPI automatically generates interactive API documentation where every endpoint can be tested.
 
 ---
 
-## Example request
+# Automatic Database Creation
 
-Listing all tasks:
+No manual database setup is required.
+
+If `tasks.db` is missing, the application automatically:
+
+- Creates the database
+- Creates the `tasks` table
+- Inserts three sample tasks
+
+This allows a fresh clone of the repository to run immediately without additional configuration.
+
+---
+
+# API Endpoints
+
+| Method | Endpoint | Description | Success | Errors |
+|---------|----------|-------------|---------|--------|
+| GET | `/` | API information | 200 | — |
+| GET | `/health` | Health check | 200 | — |
+| GET | `/tasks` | Retrieve all tasks | 200 | — |
+| GET | `/tasks/{id}` | Retrieve a task by ID | 200 | 404 |
+| POST | `/tasks` | Create a new task | 201 | 400 |
+| PUT | `/tasks/{id}` | Update an existing task | 200 | 400, 404 |
+| DELETE | `/tasks/{id}` | Delete a task | 204 | 404 |
+| GET | `/stats` | Retrieve task statistics | 200 | — |
+
+---
+
+# Task Model
+
+Each task has the following structure:
+
+```json
+{
+  "id": 1,
+  "title": "Learn FastAPI",
+  "done": false
+}
+```
+
+The `id` is automatically generated by SQLite using the `AUTOINCREMENT` keyword.
+
+---
+
+# Example Request
+
+Retrieve all tasks:
 
 ```bash
 curl -i http://127.0.0.1:8000/tasks
 ```
 
-Response:
+Example response:
 
-```
-HTTP/1.1 200 OK
-date: Thu, 16 Jul 2026 20:43:36 GMT
-server: uvicorn
-content-length: 148
-content-type: application/json
-
-[{"id":1,"title":"Learn FastAPI","done":false},{"id":2,"title":"Build CRUD API","done":false},{"id":3,"title":"Push project to GitHub","done":true}]
+```json
+[
+  {
+    "id": 1,
+    "title": "Learn FastAPI",
+    "done": false
+  },
+  {
+    "id": 2,
+    "title": "Build CRUD API",
+    "done": false
+  },
+  {
+    "id": 3,
+    "title": "Push project to GitHub",
+    "done": true
+  }
+]
 ```
 
 ---
+
+# Optional Feature: Task Statistics
+
+Implemented the optional **`GET /stats`** endpoint that returns statistics about the tasks stored in the database.
+
+Example request:
+
+```bash
+curl -i http://127.0.0.1:8000/stats
+```
+
+Example response:
+
+```json
+{
+  "total": 5,
+  "done": 2,
+  "open": 3
+}
+```
+
+The endpoint uses SQLite aggregate queries:
+
+```sql
+SELECT COUNT(*) FROM tasks;
+SELECT COUNT(*) FROM tasks WHERE done = 1;
+```
+
+The number of open tasks is calculated as:
+
+```text
+open = total - done
+```
+
+---
+
+# Manual Database Exploration
+
+The SQLite database was explored using **DB Browser for SQLite**.
+
+The following SQL queries were executed manually during Stage 4:
+
+Retrieve all tasks:
+
+```sql
+SELECT * FROM tasks;
+```
+
+Retrieve completed tasks:
+
+```sql
+SELECT * FROM tasks
+WHERE done = 1;
+```
+
+Count all tasks:
+
+```sql
+SELECT COUNT(*) FROM tasks;
+```
+
+Mark every task as completed:
+
+```sql
+UPDATE tasks
+SET done = 1;
+```
+
+Delete all completed tasks:
+
+```sql
+DELETE FROM tasks
+WHERE done = 1;
+```
+
+Running these queries directly in DB Browser demonstrated that FastAPI immediately reflected the changes because both the API and DB Browser access the same SQLite database file.
+
+---
+
+# Database Preview
+
+The database was inspected using **DB Browser for SQLite**.
+
+## Database Preview
+
+![DB Browser](images/db-browser.png)
+
+---
+
+# Swagger UI
+
+FastAPI automatically generates interactive API documentation.
 
 ## Swagger UI
 
-FastAPI generates interactive API docs automatically at `/docs` — no extra setup required.
-
-![Swagger UI](swagger-ui.png)
+![Swagger UI](images/swagger-ui.png)
 
 ---
 
-## Notes
+# Notes
 
-- **Validation errors** are returned under FastAPI's default key `detail` (e.g. `{"detail": "Title is required and cannot be empty"}`), not `error` as suggested in the assignment brief — this is FastAPI's built-in convention and was kept as-is since it's still a valid, machine-readable JSON error message.
-- **Missing vs. empty title:** posting a body with no `title` field at all returns FastAPI's automatic `422 Unprocessable Entity` (from Pydantic validation). Posting `{"title": ""}` or whitespace-only returns a custom `400 Bad Request` from an explicit check in the code. Both are "invalid input," handled at two different layers.
-- **In-memory storage:** all tasks live in a plain Python list inside `main.py`. Restarting the server always resets the list back to the 3 original seed tasks — there is no persistence yet. That's intentional for this stage; a real database is introduced next week.
+- FastAPI uses Pydantic for automatic request validation.
+- Validation errors are returned under FastAPI's default `detail` field.
+- Empty task titles return a custom **400 Bad Request** response.
+- SQLite does not have a native Boolean type. Instead, `False` is stored as `0` and `True` is stored as `1`.
+- The `id` field is automatically generated using SQLite's `AUTOINCREMENT`.
+- Database changes are persisted using `connection.commit()`.
+- If `tasks.db` is deleted, it is recreated automatically the next time the application starts.
 
 ---
 
-## Author
+# Features
+
+- FastAPI REST API
+- SQLite database
+- Persistent storage
+- Automatic database creation
+- Automatic database seeding
+- CRUD operations
+- Task statistics endpoint
+- Interactive Swagger documentation
+- Manual SQL exploration with DB Browser
+
+
+# Author
 
 **Adebanke Peke**
 
-Backend AI Engineering – Week 2 Assignment
+FlyRank AI Backend Engineering Internship
 
-Built with Python, FastAPI, and GitHub.
+Week 3 Assignment – Connecting CRUD to SQLite
+
+Built with Python, FastAPI, SQLite, and GitHub.

@@ -13,7 +13,10 @@ app = FastAPI(
 
 DATABASE = "tasks.db"
 
-connection = sqlite3.connect(DATABASE)
+connection = sqlite3.connect(
+    DATABASE,
+    check_same_thread=False
+)
 cursor = connection.cursor()
 
 cursor.execute("""
@@ -42,6 +45,7 @@ if count == 0:
     )
 
 connection.commit()
+
 
 class TaskCreate(BaseModel):
     title: str
@@ -98,18 +102,23 @@ def health():
     summary="Get all tasks",
     description="Returns a list of all tasks."
 )
-def get_tasks(done: bool = None):
+def get_tasks():
+    cursor.execute("SELECT * FROM tasks")
+    rows = cursor.fetchall()
 
-    if done is None:
-        return tasks
+    tasks = []
 
-    filtered_tasks = []
+    for row in rows:
+        task = {
+            "id": row[0],
+            "title": row[1],
+            "done": bool(row[2])
+        }
+        tasks.append(task)
+    
+    return tasks
 
-    for task in tasks:
-        if task["done"] == done:
-            filtered_tasks.append(task)
-
-    return filtered_tasks
+    
 
 
 @app.get(
@@ -118,14 +127,22 @@ def get_tasks(done: bool = None):
     description="Returns a single task by its ID."
 )
 def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
 
-    raise HTTPException(
-        status_code=404,
-        detail=f"Task {task_id} not found"
-    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task {task_id} not found"
+        )
+
+    task = {
+        "id": row[0],
+        "title": row[1],
+        "done": bool(row[2])
+    }
+
+    return task
 
 
 @app.post(

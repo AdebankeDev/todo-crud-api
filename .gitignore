@@ -7,5 +7,11 @@ wheels/
 *.egg-info
 tasks.db
 
+# Environment variables
+.env
+
+# IDE
+.vscode/
+
 # Virtual environments
 .venv

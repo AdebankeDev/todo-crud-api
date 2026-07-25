@@ -158,13 +158,23 @@ def create_task(task: TaskCreate):
             detail="Title is required and cannot be empty"
         )
 
+    cursor.execute(
+        """
+        INSERT INTO tasks (title, done)
+        VALUES (?, ?)
+        """,
+        (task.title, False)
+    )
+
+    connection.commit()
+
+    new_id = cursor.lastrowid
+
     new_task = {
-        "id": len(tasks) + 1,
+        "id": new_id,
         "title": task.title,
         "done": False
     }
-
-    tasks.append(new_task)
 
     return new_task
 

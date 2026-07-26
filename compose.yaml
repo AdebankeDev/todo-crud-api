@@ -3,9 +3,8 @@ services:
   db:
     image: postgres:17
     container_name: taskdb
-    environment:
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: tasks
+    env_file:
+      - .env.docker
     volumes:
       - taskdata:/var/lib/postgresql/data
     ports:
@@ -22,8 +21,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://postgres:dev@db:5432/tasks
+    env_file:
+      - .env.docker
     ports:
       - "8000:8000"
 

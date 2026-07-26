@@ -1,26 +1,37 @@
 # Task API
 
-A RESTful CRUD API for managing a to-do list, built with **FastAPI** and **SQLite**. This project demonstrates how to build a backend API with persistent data storage using SQL instead of an in-memory Python list.
+A RESTful CRUD API for managing a to-do list, built with **FastAPI** and **PostgreSQL**. The application is fully containerized using **Docker** and **Docker Compose**, providing persistent data storage and a one-command setup for both the API and database.
 
-Built as part of the **FlyRank AI Backend Engineering Internship** – **Week 3: Connecting Your CRUD to the Database**.
+Built as part of the **FlyRank AI Backend Engineering Internship** – **Week 4: Dockerizing a PostgreSQL CRUD API**.
 
 ---
 
 # Tech Stack
 
-- Python 3.10+
+- Python 3.14
 - FastAPI
-- SQLite (`sqlite3`)
-- Uvicorn (ASGI server)
-- uv (package and environment manager)
+- PostgreSQL 17
+- Psycopg
+- Docker
+- Docker Compose
+- Uvicorn
+- uv
 
 ---
 
-# Why SQLite?
+# Project Overview
 
-SQLite was chosen because it is a lightweight, serverless relational database that stores all data in a single file (`tasks.db`). It requires no separate database server, making it ideal for learning backend development and building small applications.
+This project is a RESTful Task Management API that supports creating, retrieving, updating, and deleting tasks.
 
-Compared to the Week 2 implementation that stored tasks in a Python list, SQLite provides **persistent storage**, so tasks remain available even after restarting the application.
+Compared to the previous SQLite implementation, this version uses PostgreSQL as the database engine and Docker Compose to orchestrate both the FastAPI application and the PostgreSQL database.
+
+When the application starts, it automatically:
+
+- Connects to PostgreSQL
+- Creates the `tasks` table if it does not exist
+- Seeds the database with three sample tasks (only when the table is empty)
+
+Database data is stored in a Docker volume, ensuring persistence even after containers are restarted.
 
 ---
 
@@ -29,28 +40,53 @@ Compared to the Week 2 implementation that stored tasks in a Python list, SQLite
 ```text
 task-api/
 │
-├── main.py
-├── README.md
-├── .gitignore
 ├── images/
-│   ├── swagger-ui.png
-│   └── db-browser.png
-└── tasks.db (created automatically)
+│   ├── postgres-tasks.png
+│   └── swagger-ui.png
+│
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── compose.yaml
+├── Dockerfile
+├── main.py
+├── pyproject.toml
+├── README.md
+├── requirements.txt
+└── uv.lock
 ```
 
 ---
 
 # Database
 
-The application stores all tasks in a SQLite database file named **`tasks.db`**.
+The application uses **PostgreSQL 17** running inside a Docker container.
 
-When the application starts, it automatically:
+During startup, the application automatically:
 
-1. Creates the SQLite database if it does not exist.
-2. Creates the `tasks` table if it does not exist.
-3. Seeds the database with three example tasks **only when the table is empty**.
+1. Creates the `tasks` table if it does not exist.
+2. Seeds three example tasks when the table is empty.
+3. Connects using the `DATABASE_URL` environment variable.
 
-Because `tasks.db` is included in `.gitignore`, every developer who clones the repository starts with a fresh database that is created automatically.
+The database is persisted using a Docker volume, so data remains available after restarting containers.
+
+---
+
+# Environment Variables
+
+Create a `.env` file for local development using `.env.example`.
+
+Example:
+
+```env
+DATABASE_URL=postgresql://postgres:dev@localhost:5433/tasks
+```
+
+For Docker Compose, the application connects to the database using the service name:
+
+```env
+DATABASE_URL=postgresql://postgres:dev@db:5432/tasks
+```
 
 ---
 
@@ -63,33 +99,49 @@ git clone https://github.com/AdebankeDev/todo-crud-api.git
 cd todo-crud-api
 ```
 
-## Start the API
+---
+
+## Running Locally
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Start the application:
 
 ```bash
 uv run uvicorn main:app --reload
 ```
 
-## Open Swagger UI
+Open:
 
 ```
 http://127.0.0.1:8000/docs
 ```
 
-FastAPI automatically generates interactive API documentation where every endpoint can be tested.
-
 ---
 
-# Automatic Database Creation
+## Running with Docker
 
-No manual database setup is required.
+Build and start the API and PostgreSQL:
 
-If `tasks.db` is missing, the application automatically:
+```bash
+docker compose up --build
+```
 
-- Creates the database
-- Creates the `tasks` table
-- Inserts three sample tasks
+Stop the containers:
 
-This allows a fresh clone of the repository to run immediately without additional configuration.
+```bash
+docker compose down
+```
+
+The API will be available at:
+
+```
+http://localhost:8000/docs
+```
 
 ---
 
@@ -101,8 +153,8 @@ This allows a fresh clone of the repository to run immediately without additiona
 | GET | `/health` | Health check | 200 | — |
 | GET | `/tasks` | Retrieve all tasks | 200 | — |
 | GET | `/tasks/{id}` | Retrieve a task by ID | 200 | 404 |
-| POST | `/tasks` | Create a new task | 201 | 400 |
-| PUT | `/tasks/{id}` | Update an existing task | 200 | 400, 404 |
+| POST | `/tasks` | Create a task | 201 | 400 |
+| PUT | `/tasks/{id}` | Update a task | 200 | 400, 404 |
 | DELETE | `/tasks/{id}` | Delete a task | 204 | 404 |
 | GET | `/stats` | Retrieve task statistics | 200 | — |
 
@@ -120,7 +172,7 @@ Each task has the following structure:
 }
 ```
 
-The `id` is automatically generated by SQLite using the `AUTOINCREMENT` keyword.
+The `id` field is automatically generated by PostgreSQL using the `SERIAL` data type.
 
 ---
 
@@ -156,9 +208,9 @@ Example response:
 
 ---
 
-# Optional Feature: Task Statistics
+# Task Statistics
 
-Implemented the optional **`GET /stats`** endpoint that returns statistics about the tasks stored in the database.
+The optional **`GET /stats`** endpoint returns statistics about all tasks stored in the database.
 
 Example request:
 
@@ -176,11 +228,12 @@ Example response:
 }
 ```
 
-The endpoint uses SQLite aggregate queries:
+The endpoint uses PostgreSQL aggregate queries:
 
 ```sql
 SELECT COUNT(*) FROM tasks;
-SELECT COUNT(*) FROM tasks WHERE done = 1;
+
+SELECT COUNT(*) FROM tasks WHERE done = TRUE;
 ```
 
 The number of open tasks is calculated as:
@@ -191,93 +244,61 @@ open = total - done
 
 ---
 
-# Manual Database Exploration
-
-The SQLite database was explored using **DB Browser for SQLite**.
-
-The following SQL queries were executed manually during Stage 4:
-
-Retrieve all tasks:
-
-```sql
-SELECT * FROM tasks;
-```
-
-Retrieve completed tasks:
-
-```sql
-SELECT * FROM tasks
-WHERE done = 1;
-```
-
-Count all tasks:
-
-```sql
-SELECT COUNT(*) FROM tasks;
-```
-
-Mark every task as completed:
-
-```sql
-UPDATE tasks
-SET done = 1;
-```
-
-Delete all completed tasks:
-
-```sql
-DELETE FROM tasks
-WHERE done = 1;
-```
-
-Running these queries directly in DB Browser demonstrated that FastAPI immediately reflected the changes because both the API and DB Browser access the same SQLite database file.
-
----
-
-# Database Preview
-
-The database was inspected using **DB Browser for SQLite**.
-
-## Database Preview
-
-![DB Browser](images/db-browser.png)
-
----
-
 # Swagger UI
 
 FastAPI automatically generates interactive API documentation.
 
-## Swagger UI
-
 ![Swagger UI](images/swagger-ui.png)
+
+---
+
+# Docker Features
+
+The project uses Docker Compose to manage both the API and PostgreSQL services.
+
+Features include:
+
+- Separate containers for the API and database
+- Automatic PostgreSQL startup
+- Health checks for database readiness
+- Persistent Docker volume for database storage
+- One-command application startup
+
+Start everything with:
+
+```bash
+docker compose up --build
+```
 
 ---
 
 # Notes
 
 - FastAPI uses Pydantic for automatic request validation.
-- Validation errors are returned under FastAPI's default `detail` field.
 - Empty task titles return a custom **400 Bad Request** response.
-- SQLite does not have a native Boolean type. Instead, `False` is stored as `0` and `True` is stored as `1`.
-- The `id` field is automatically generated using SQLite's `AUTOINCREMENT`.
-- Database changes are persisted using `connection.commit()`.
-- If `tasks.db` is deleted, it is recreated automatically the next time the application starts.
+- PostgreSQL automatically generates task IDs using the `SERIAL` data type.
+- SQL queries use parameterized placeholders (`%s`) to prevent SQL injection.
+- The database schema is created automatically on application startup.
+- Sample tasks are inserted only when the table is empty.
+- Docker volumes preserve database data between container restarts.
 
 ---
 
 # Features
 
 - FastAPI REST API
-- SQLite database
+- PostgreSQL database
 - Persistent storage
-- Automatic database creation
+- Automatic table creation
 - Automatic database seeding
+- Dockerized FastAPI application
+- Docker Compose orchestration
+- Environment variable configuration
 - CRUD operations
 - Task statistics endpoint
 - Interactive Swagger documentation
-- Manual SQL exploration with DB Browser
 
+---
 
 # Author
 
@@ -285,6 +306,6 @@ FastAPI automatically generates interactive API documentation.
 
 FlyRank AI Backend Engineering Internship
 
-Week 3 Assignment – Connecting CRUD to SQLite
+**Week 4 Assignment – Dockerizing a PostgreSQL CRUD API**
 
-Built with Python, FastAPI, SQLite, and GitHub.
+Built with Python, FastAPI, PostgreSQL, Docker, Docker Compose, and GitHub.

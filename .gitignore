@@ -9,6 +9,7 @@ tasks.db
 
 # Environment variables
 .env
+.env.docker
 
 # IDE
 .vscode/

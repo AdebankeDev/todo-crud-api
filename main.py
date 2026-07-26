@@ -1,6 +1,13 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
-import sqlite3
+import os
+
+import psycopg
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 app = FastAPI(
@@ -10,18 +17,14 @@ app = FastAPI(
 )
 
 # DATABASE IMPLEMENTATION
+connection = psycopg.connect(DATABASE_URL)
+connection.autocommit = True
 
-DATABASE = "tasks.db"
-
-connection = sqlite3.connect(
-    DATABASE,
-    check_same_thread=False
-)
 cursor = connection.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     done BOOLEAN NOT NULL
 )
@@ -40,11 +43,10 @@ if count == 0:
     ]
 
     cursor.executemany(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+        "INSERT INTO tasks (title, done) VALUES (%s, %s)",
         sample_tasks
     )
 
-connection.commit()
 
 
 class TaskCreate(BaseModel):
@@ -53,24 +55,6 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str
     done: bool
-
-tasks = [
-    {
-        "id": 1,
-        "title": "Learn FastAPI",
-        "done": False
-    },
-    {
-        "id": 2,
-        "title": "Build CRUD API",
-        "done": False
-    },
-    {
-        "id": 3,
-        "title": "Push project to GitHub",
-        "done": True
-    }
-]
 
 
 @app.get(
@@ -127,7 +111,7 @@ def get_tasks():
     description="Returns a single task by its ID."
 )
 def get_task(task_id: int):
-    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT * FROM tasks WHERE id = %s", (task_id,))
     row = cursor.fetchone()
 
     if row is None:
@@ -159,16 +143,14 @@ def create_task(task: TaskCreate):
         )
 
     cursor.execute(
-        """
-        INSERT INTO tasks (title, done)
-        VALUES (?, ?)
-        """,
-        (task.title, False)
-    )
-
-    connection.commit()
-
-    new_id = cursor.lastrowid
+    """
+    INSERT INTO tasks (title, done)
+    VALUES (%s, %s)
+    RETURNING id
+    """,
+    (task.title, False)
+)
+    new_id = cursor.fetchone()[0]
 
     new_task = {
         "id": new_id,
@@ -192,9 +174,9 @@ def update_task(task_id: int, updated_task: TaskUpdate):
             detail="Title cannot be empty"
         )
 
-    cursor.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+    cursor.execute("UPDATE tasks SET title = %s, done = %s WHERE id = %s",
                    (updated_task.title, updated_task.done, task_id))
-    connection.commit()
+    
 
     if cursor.rowcount == 0:
         raise HTTPException(
@@ -209,8 +191,6 @@ def update_task(task_id: int, updated_task: TaskUpdate):
     
                            
     
-
-
 @app.delete(
     "/tasks/{task_id}",
     status_code=204,
@@ -219,9 +199,8 @@ def update_task(task_id: int, updated_task: TaskUpdate):
 )
 def delete_task(task_id: int):
 
-    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-    connection.commit()
-
+    cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
+    
     if cursor.rowcount == 0:
         raise HTTPException(
             status_code=404,

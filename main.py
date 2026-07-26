@@ -87,7 +87,7 @@ def health():
     description="Returns a list of all tasks."
 )
 def get_tasks():
-    cursor.execute("SELECT * FROM tasks")
+    cursor.execute("SELECT * FROM tasks ORDER BY id")
     rows = cursor.fetchall()
 
     tasks = []

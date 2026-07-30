@@ -57,6 +57,10 @@ class TaskUpdate(BaseModel):
     title: str
     done: bool
 
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
 
 @app.get(
     "/",
@@ -227,3 +231,62 @@ def get_stats():
         "done": done,
         "open": open_tasks
     }
+
+
+@app.post(
+    "/auth/signup",
+    status_code=status.HTTP_201_CREATED
+    )
+def signup(request: SignupRequest):
+    
+    if not request.email or not request.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email and password are required."
+        )
+
+    try:
+        response = supabase.auth.sign_up(
+            {
+                "email": request.email,
+                "password": request.password,
+            }
+        )
+        return response.user.model_dump()
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+
+
+
+@app.post("/auth/login")
+def login(request: SignupRequest):
+
+    if not request.email or not request.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email and password are required."
+        )
+
+    try:
+        response = supabase.auth.sign_in_with_password(
+            {
+                "email": request.email,
+                "password": request.password,
+            }
+        )
+
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token,
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid login credentials"
+        )

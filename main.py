@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Header
 from pydantic import BaseModel
 import os
 
 import psycopg
 from dotenv import load_dotenv
 from supabase_client import supabase
+from fastapi.responses import JSONResponse
 
 load_dotenv()
 
@@ -290,3 +291,30 @@ def login(request: SignupRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid login credentials"
         )
+
+
+@app.get("/public/info")
+def public_info():
+        return {
+            "message": "Welcome stranger! This info is public."
+        }
+
+
+@app.get("/protected/profile")
+def protected_profile(authorization: str = Header(default=None)):
+    if (
+        authorization is None
+        or not authorization.startswith("Bearer ")
+        or not authorization.split("Bearer ")[1].strip()
+    ):
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Access token required"}
+        )
+
+    access_token = authorization.split("Bearer ")[1]
+
+    return {
+        "message": "Protected profile accessed.",
+        "access_token": access_token
+    }

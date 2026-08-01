@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Header
+from fastapi import FastAPI, HTTPException, status, Header, Depends
 from pydantic import BaseModel
 import os
 
@@ -6,6 +6,9 @@ import psycopg
 from dotenv import load_dotenv
 from supabase_client import supabase
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
 
 load_dotenv()
 
@@ -300,21 +303,32 @@ def public_info():
         }
 
 
+
 @app.get("/protected/profile")
-def protected_profile(authorization: str = Header(default=None)):
-    if (
-        authorization is None
-        or not authorization.startswith("Bearer ")
-        or not authorization.split("Bearer ")[1].strip()
-    ):
-        return JSONResponse(
-            status_code=401,
-            content={"error": "Access token required"}
+def get_profile(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        response = supabase.auth.get_user(token)
+
+        if response.user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+
+        user = response.user
+
+        return {
+            "id": user.id,
+            "email": user.email,
+            "created_at": user.created_at,
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
         )
-
-    access_token = authorization.split("Bearer ")[1]
-
-    return {
-        "message": "Protected profile accessed.",
-        "access_token": access_token
-    }

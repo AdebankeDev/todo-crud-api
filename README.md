@@ -1,37 +1,48 @@
 # Task API
 
-A RESTful CRUD API for managing a to-do list, built with **FastAPI** and **PostgreSQL**. The application is fully containerized using **Docker** and **Docker Compose**, providing persistent data storage and a one-command setup for both the API and database.
+A RESTful Task Management API built with **FastAPI**, **PostgreSQL**, and **Supabase Authentication**. The project began as a CRUD API for managing tasks and was progressively extended throughout the **FlyRank AI Backend Engineering Internship** to include Docker, PostgreSQL, JWT authentication, protected routes, and interactive API documentation with Swagger UI.
 
-Built as part of the **FlyRank AI Backend Engineering Internship** – **Week 4: Dockerizing a PostgreSQL CRUD API**.
+The API now supports:
+
+* Task CRUD operations
+* PostgreSQL persistence
+* User registration and login
+* JWT authentication with Supabase
+* Protected endpoints
+* Logout
+* Interactive Swagger UI with Bearer Authentication
 
 ---
 
 # Tech Stack
 
-- Python 3.14
-- FastAPI
-- PostgreSQL 17
-- Psycopg
-- Docker
-- Docker Compose
-- Uvicorn
-- uv
+* Python 3.12
+* FastAPI
+* PostgreSQL
+* Psycopg
+* Supabase Authentication
+* Docker
+* Docker Compose
+* Uvicorn
+* Swagger UI
+* uv
 
 ---
 
 # Project Overview
 
-This project is a RESTful Task Management API that supports creating, retrieving, updating, and deleting tasks.
+This project is the culmination of multiple backend engineering assignments completed during the FlyRank AI Backend Engineering Internship.
 
-Compared to the previous SQLite implementation, this version uses PostgreSQL as the database engine and Docker Compose to orchestrate both the FastAPI application and the PostgreSQL database.
+The project originally started as a simple CRUD Task Management API and has been enhanced over time with:
 
-When the application starts, it automatically:
+* PostgreSQL database integration
+* Docker containerization
+* Environment variable configuration
+* JWT authentication using Supabase
+* Reusable authentication dependency for protected routes
+* Interactive Swagger documentation with Bearer token authentication
 
-- Connects to PostgreSQL
-- Creates the `tasks` table if it does not exist
-- Seeds the database with three sample tasks (only when the table is empty)
-
-Database data is stored in a Docker volume, ensuring persistence even after containers are restarted.
+The API demonstrates how authentication can be added to an existing REST API while maintaining clean architecture and reusable code.
 
 ---
 
@@ -49,7 +60,9 @@ task-api/
 ├── .gitignore
 ├── compose.yaml
 ├── Dockerfile
+├── auth.py
 ├── main.py
+├── supabase_client.py
 ├── pyproject.toml
 ├── README.md
 ├── requirements.txt
@@ -60,56 +73,59 @@ task-api/
 
 # Database
 
-The application uses **PostgreSQL 17** running inside a Docker container.
+The application uses PostgreSQL as its primary database.
 
-During startup, the application automatically:
+On startup, the application automatically:
 
-1. Creates the `tasks` table if it does not exist.
-2. Seeds three example tasks when the table is empty.
-3. Connects using the `DATABASE_URL` environment variable.
+* Connects to PostgreSQL
+* Creates the required database tables if they do not exist
+* Seeds sample tasks when the database is empty
 
-The database is persisted using a Docker volume, so data remains available after restarting containers.
+The database is persisted using Docker volumes, ensuring that data remains available after restarting containers.
 
 ---
 
 # Environment Variables
 
-Create a `.env` file for local development using `.env.example`.
+Create a `.env` file using `.env.example`.
 
 Example:
 
 ```env
-DATABASE_URL=postgresql://postgres:dev@localhost:5433/tasks
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+DATABASE_URL=postgresql://postgres:password@localhost:5433/tasks
 ```
 
-For Docker Compose, the application connects to the database using the service name:
+When using Docker Compose:
 
 ```env
-DATABASE_URL=postgresql://postgres:dev@db:5432/tasks
+DATABASE_URL=postgresql://postgres:password@db:5432/tasks
 ```
 
 ---
 
 # Running the Project
 
-## Clone the repository
+## Clone the Repository
 
 ```bash
 git clone https://github.com/AdebankeDev/todo-crud-api.git
+
 cd todo-crud-api
 ```
 
 ---
 
-## Running Locally
-
-Install dependencies:
+## Install Dependencies
 
 ```bash
 uv sync
 ```
 
-Start the application:
+---
+
+## Run the API
 
 ```bash
 uv run uvicorn main:app --reload
@@ -123,9 +139,7 @@ http://127.0.0.1:8000/docs
 
 ---
 
-## Running with Docker
-
-Build and start the API and PostgreSQL:
+## Run with Docker
 
 ```bash
 docker compose up --build
@@ -137,7 +151,7 @@ Stop the containers:
 docker compose down
 ```
 
-The API will be available at:
+Swagger UI will be available at:
 
 ```
 http://localhost:8000/docs
@@ -145,101 +159,75 @@ http://localhost:8000/docs
 
 ---
 
-# API Endpoints
+# API Reference
 
-| Method | Endpoint | Description | Success | Errors |
-|---------|----------|-------------|---------|--------|
-| GET | `/` | API information | 200 | — |
-| GET | `/health` | Health check | 200 | — |
-| GET | `/tasks` | Retrieve all tasks | 200 | — |
-| GET | `/tasks/{id}` | Retrieve a task by ID | 200 | 404 |
-| POST | `/tasks` | Create a task | 201 | 400 |
-| PUT | `/tasks/{id}` | Update a task | 200 | 400, 404 |
-| DELETE | `/tasks/{id}` | Delete a task | 204 | 404 |
-| GET | `/stats` | Retrieve task statistics | 200 | — |
+| Method | Endpoint               | Description                               | Authentication |
+| ------ | ---------------------- | ----------------------------------------- | :------------: |
+| GET    | `/`                    | API information                           |        ❌       |
+| GET    | `/health`              | Health check                              |        ❌       |
+| GET    | `/tasks`               | Retrieve all tasks                        |        ❌       |
+| GET    | `/tasks/{id}`          | Retrieve a task by ID                     |        ❌       |
+| POST   | `/tasks`               | Create a new task                         |        ❌       |
+| PUT    | `/tasks/{id}`          | Update a task                             |        ❌       |
+| DELETE | `/tasks/{id}`          | Delete a task                             |        ❌       |
+| GET    | `/stats`               | Retrieve task statistics                  |        ❌       |
+| POST   | `/auth/signup`         | Register a new user                       |        ❌       |
+| POST   | `/auth/login`          | Authenticate a user and receive a JWT     |        ❌       |
+| POST   | `/auth/logout`         | Log out the authenticated user            |        ✅       |
+| GET    | `/protected/profile`   | Retrieve the authenticated user's profile |        ✅       |
+| GET    | `/protected/dashboard` | Example protected endpoint                |        ✅       |
 
 ---
 
-# Task Model
+# Authentication
 
-Each task has the following structure:
+Authentication is powered by **Supabase Auth** using JSON Web Tokens (JWT).
+
+## Register a User
+
+```
+POST /auth/signup
+```
+
+## Login
+
+```
+POST /auth/login
+```
+
+A successful login returns an **access token**.
+
+## Access Protected Endpoints
+
+1. Open Swagger UI.
+2. Click the **Authorize** button.
+3. Paste your JWT access token.
+4. Execute any protected endpoint.
+
+Protected endpoints automatically verify the token before processing the request.
+
+If the token is:
+
+* Invalid
+* Expired
+* Tampered with
+
+the API returns:
+
+```http
+401 Unauthorized
+```
+
+---
+
+# Example Protected Response
 
 ```json
 {
-  "id": 1,
-  "title": "Learn FastAPI",
-  "done": false
+  "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "email": "user@example.com",
+  "created_at": "2026-08-01T09:30:00Z"
 }
-```
-
-The `id` field is automatically generated by PostgreSQL using the `SERIAL` data type.
-
----
-
-# Example Request
-
-Retrieve all tasks:
-
-```bash
-curl -i http://127.0.0.1:8000/tasks
-```
-
-Example response:
-
-```json
-[
-  {
-    "id": 1,
-    "title": "Learn FastAPI",
-    "done": false
-  },
-  {
-    "id": 2,
-    "title": "Build CRUD API",
-    "done": false
-  },
-  {
-    "id": 3,
-    "title": "Push project to GitHub",
-    "done": true
-  }
-]
-```
-
----
-
-# Task Statistics
-
-The optional **`GET /stats`** endpoint returns statistics about all tasks stored in the database.
-
-Example request:
-
-```bash
-curl -i http://127.0.0.1:8000/stats
-```
-
-Example response:
-
-```json
-{
-  "total": 5,
-  "done": 2,
-  "open": 3
-}
-```
-
-The endpoint uses PostgreSQL aggregate queries:
-
-```sql
-SELECT COUNT(*) FROM tasks;
-
-SELECT COUNT(*) FROM tasks WHERE done = TRUE;
-```
-
-The number of open tasks is calculated as:
-
-```text
-open = total - done
 ```
 
 ---
@@ -248,23 +236,28 @@ open = total - done
 
 FastAPI automatically generates interactive API documentation.
 
+The Swagger UI includes:
+
+* Bearer Authentication support
+* Authorize button
+* Interactive endpoint testing
+* Protected endpoint lock icons
+
 ![Swagger UI](images/swagger-ui.png)
 
 ---
 
 # Docker Features
 
-The project uses Docker Compose to manage both the API and PostgreSQL services.
+The project uses Docker Compose to orchestrate the API and PostgreSQL database.
 
 Features include:
 
-- Separate containers for the API and database
-- Automatic PostgreSQL startup
-- Health checks for database readiness
-- Persistent Docker volume for database storage
-- One-command application startup
-
-Start everything with:
+* Separate API and database containers
+* Automatic PostgreSQL startup
+* Health checks
+* Persistent Docker volumes
+* One-command setup
 
 ```bash
 docker compose up --build
@@ -272,31 +265,36 @@ docker compose up --build
 
 ---
 
-# Notes
+# Features
 
-- FastAPI uses Pydantic for automatic request validation.
-- Empty task titles return a custom **400 Bad Request** response.
-- PostgreSQL automatically generates task IDs using the `SERIAL` data type.
-- SQL queries use parameterized placeholders (`%s`) to prevent SQL injection.
-- The database schema is created automatically on application startup.
-- Sample tasks are inserted only when the table is empty.
-- Docker volumes preserve database data between container restarts.
+* RESTful CRUD Task API
+* PostgreSQL database
+* Dockerized deployment
+* Docker Compose orchestration
+* Persistent data storage
+* Automatic database initialization
+* JWT authentication using Supabase
+* User registration
+* User login
+* User logout
+* Protected endpoints
+* Reusable authentication dependency
+* Interactive Swagger UI
+* Environment variable configuration
 
 ---
 
-# Features
+# Future Improvements
 
-- FastAPI REST API
-- PostgreSQL database
-- Persistent storage
-- Automatic table creation
-- Automatic database seeding
-- Dockerized FastAPI application
-- Docker Compose orchestration
-- Environment variable configuration
-- CRUD operations
-- Task statistics endpoint
-- Interactive Swagger documentation
+Potential enhancements include:
+
+* Protecting CRUD task endpoints with authentication
+* Role-based authorization
+* Refresh token support
+* Password reset functionality
+* User-specific task ownership
+* Automated testing with Pytest
+* CI/CD using GitHub Actions
 
 ---
 
@@ -306,6 +304,4 @@ docker compose up --build
 
 FlyRank AI Backend Engineering Internship
 
-**Week 4 Assignment – Dockerizing a PostgreSQL CRUD API**
-
-Built with Python, FastAPI, PostgreSQL, Docker, Docker Compose, and GitHub.
+This project represents the progressive development of a FastAPI backend throughout the internship, evolving from a basic CRUD API into a production-style REST API featuring PostgreSQL, Docker, Supabase JWT authentication, protected routes, and interactive Swagger documentation.

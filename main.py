@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Header, Depends
+from fastapi import FastAPI, HTTPException, status, Header, Depends, Response
 from pydantic import BaseModel
 import os
 
@@ -6,9 +6,8 @@ import psycopg
 from dotenv import load_dotenv
 from supabase_client import supabase
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from auth import get_current_user
 
-security = HTTPBearer()
 
 load_dotenv()
 
@@ -305,30 +304,26 @@ def public_info():
 
 
 @app.get("/protected/profile")
-def get_profile(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    token = credentials.credentials
+def get_profile(user=Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at,
+    }
 
-    try:
-        response = supabase.auth.get_user(token)
 
-        if response.user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
 
-        user = response.user
+@app.get("/protected/dashboard")
+def dashboard(user=Depends(get_current_user)):
+    return {
+        "message": f"Welcome {user.email}",
+        "user_id": user.id
+    }
 
-        return {
-            "id": user.id,
-            "email": user.email,
-            "created_at": user.created_at,
-        }
 
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
+
+
+@app.post("/auth/logout", status_code=204)
+def logout(user=Depends(get_current_user)):
+    supabase.auth.sign_out()
+    return Response(status_code=204)

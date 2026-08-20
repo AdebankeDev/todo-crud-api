@@ -332,6 +332,26 @@ The endpoint returns `400` with a JSON message naming the invalid or missing fie
 
 The LLM provider is configured through environment variables rather than being hard-coded, allowing the application to switch providers without changing the application code.
 
+## Stage 2 — Prompt v1 Testing
+
+The resume extraction prompt is stored in:
+
+`prompts/resume-extraction-v1.md`
+
+The prompt is loaded as a system message, while the resume text is sent separately as a user message.
+
+### Test results
+
+Three different resume inputs were tested with the real LLM.
+
+- Clear resume: correctly extracted the available information.
+- Incomplete resume: handled missing information without inventing values.
+- Messy resume: extracted the available fields and handled missing information appropriately.
+
+The model was configured with a temperature of 0.2 for more consistent responses.
+
+The prompt is versioned as `resume-extraction-v1.md`.
+
 # Author
 
 **Adebanke Peke**

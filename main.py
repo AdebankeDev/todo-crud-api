@@ -9,6 +9,7 @@ from supabase_client import supabase
 from fastapi.responses import JSONResponse
 from auth import get_current_user
 from llm.schema import ResumeExtractRequest, ResumeExtractResponse
+from llm.client import extract_resume
 
 
 load_dotenv()
@@ -345,10 +346,10 @@ def logout(user=Depends(get_current_user)):
 
 @app.post(
     "/extract",
-    response_model=ResumeExtractResponse,
     summary="Extract structured information from a resume"
 )
-def extract_resume(request: ResumeExtractRequest):
+def extract_resume_endpoint(request: ResumeExtractRequest):
+
     if os.getenv("LLM_STUB") == "1":
         return ResumeExtractResponse(
             name="Ada Lovelace",
@@ -361,7 +362,6 @@ def extract_resume(request: ResumeExtractRequest):
             needs_review=False
         )
 
-    raise HTTPException(
-        status_code=503,
-        detail="LLM integration is not enabled yet"
-    )
+    result = extract_resume(request.text)
+
+    return result

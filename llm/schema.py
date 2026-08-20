@@ -9,7 +9,7 @@ class ResumeExtractResponse(BaseModel):
     name: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
-    skills: list[str] = []
+    skills: list[str] = Field(default_factory=list)
     education: str | None = None
     experience_years: float | None = Field(default=None, ge=0)
     confidence: float = Field(ge=0.0, le=1.0)

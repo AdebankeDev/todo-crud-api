@@ -300,6 +300,38 @@ Potential enhancements include:
 
 The LLM provider is configured through `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`, so the application code does not need to change when switching providers.
 
+## LLM Endpoint — Stage 1
+
+The API includes a `POST /extract` endpoint that accepts resume text and returns structured resume information.
+
+### Stub Mode
+
+Set `LLM_STUB=1` in `.env` to test the endpoint without making an LLM call.
+
+### Test the Endpoint
+
+**Valid request:**
+
+```bash
+curl -X POST http://127.0.0.1:8000/extract \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Ada Lovelace is a software engineer with Python and FastAPI experience."}'
+```
+
+**Invalid request:**
+
+```bash
+curl -X POST http://127.0.0.1:8000/extract \
+  -H "Content-Type: application/json" \
+  -d '{"wrong_field":"Ada Lovelace"}'
+```
+
+The endpoint returns `400` with a JSON message naming the invalid or missing field. Invalid requests are rejected before any LLM call is made.
+
+### Provider Configuration
+
+The LLM provider is configured through environment variables rather than being hard-coded, allowing the application to switch providers without changing the application code.
+
 # Author
 
 **Adebanke Peke**

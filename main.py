@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, status, Header, Depends, Response
+from fastapi import FastAPI, HTTPException, status, Header, Depends, Response, Request
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 import os
 
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 from supabase_client import supabase
 from fastapi.responses import JSONResponse
 from auth import get_current_user
+from llm.schema import ResumeExtractRequest, ResumeExtractResponse
 
 
 load_dotenv()
@@ -19,6 +21,18 @@ app = FastAPI(
     description="A simple in-memory CRUD API for managing tasks.",
     version="1.0.0"
 )
+
+# Exception handler for validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    field = exc.errors()[0]["loc"][-1]
+
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": f"Invalid field: {field}"
+        }
+    )
 
 # DATABASE IMPLEMENTATION
 connection = psycopg.connect(DATABASE_URL)
@@ -327,3 +341,27 @@ def dashboard(user=Depends(get_current_user)):
 def logout(user=Depends(get_current_user)):
     supabase.auth.sign_out()
     return Response(status_code=204)
+
+
+@app.post(
+    "/extract",
+    response_model=ResumeExtractResponse,
+    summary="Extract structured information from a resume"
+)
+def extract_resume(request: ResumeExtractRequest):
+    if os.getenv("LLM_STUB") == "1":
+        return ResumeExtractResponse(
+            name="Ada Lovelace",
+            email="ada@example.com",
+            phone="+1234567890",
+            skills=["Python", "FastAPI"],
+            education="Computer Engineering",
+            experience_years=2.0,
+            confidence=0.95,
+            needs_review=False
+        )
+
+    raise HTTPException(
+        status_code=503,
+        detail="LLM integration is not enabled yet"
+    )

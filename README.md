@@ -296,7 +296,9 @@ Potential enhancements include:
 * Automated testing with Pytest
 * CI/CD using GitHub Actions
 
----
+### LLM Provider Configuration
+
+The LLM provider is configured through `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`, so the application code does not need to change when switching providers.
 
 # Author
 

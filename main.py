@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, Header, Depends, Response, Request
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
+from pydantic import ValidationError
 import os
 
 import psycopg
@@ -9,7 +10,13 @@ from supabase_client import supabase
 from fastapi.responses import JSONResponse
 from auth import get_current_user
 from llm.schema import ResumeExtractRequest, ResumeExtractResponse
-from llm.client import extract_resume
+from llm.client import (
+    extract_resume,
+    parse_json,
+    validate_output,
+    repair_llm_output,
+    quarantine_failure,
+)
 
 
 load_dotenv()
@@ -213,7 +220,7 @@ def update_task(task_id: int, updated_task: TaskUpdate):
     }
     
                            
-    
+
 @app.delete(
     "/tasks/{task_id}",
     status_code=204,
@@ -230,7 +237,7 @@ def delete_task(task_id: int):
             detail=f"Task {task_id} not found"
         )
 
-
+# Task Statistics Endpoint
 @app.get(
     "/stats",
     summary="Task statistics",
@@ -251,6 +258,7 @@ def get_stats():
     }
 
 
+# Authentication Endpoints
 @app.post(
     "/auth/signup",
     status_code=status.HTTP_201_CREATED
@@ -280,7 +288,7 @@ def signup(request: SignupRequest):
     
 
 
-
+# Authentication Endpoints
 @app.post("/auth/login")
 def login(request: SignupRequest):
 
@@ -309,7 +317,7 @@ def login(request: SignupRequest):
             detail="Invalid login credentials"
         )
 
-
+# Public route that does not require authentication
 @app.get("/public/info")
 def public_info():
         return {
@@ -317,7 +325,7 @@ def public_info():
         }
 
 
-
+# Protected route that requires authentication
 @app.get("/protected/profile")
 def get_profile(user=Depends(get_current_user)):
     return {
@@ -327,7 +335,7 @@ def get_profile(user=Depends(get_current_user)):
     }
 
 
-
+# Protected route that requires authentication
 @app.get("/protected/dashboard")
 def dashboard(user=Depends(get_current_user)):
     return {
@@ -337,13 +345,14 @@ def dashboard(user=Depends(get_current_user)):
 
 
 
-
+# Authentication Endpoints
 @app.post("/auth/logout", status_code=204)
 def logout(user=Depends(get_current_user)):
     supabase.auth.sign_out()
     return Response(status_code=204)
 
 
+# Resume Extraction Endpoint
 @app.post(
     "/extract",
     summary="Extract structured information from a resume"
@@ -362,6 +371,38 @@ def extract_resume_endpoint(request: ResumeExtractRequest):
             needs_review=False
         )
 
-    result = extract_resume(request.text)
+    raw_output = extract_resume(request.text)
 
-    return result
+    try:
+        parsed_output = parse_json(raw_output)
+        validated_output = validate_output(parsed_output)
+
+        return validated_output
+
+    except (ValueError, ValidationError) as first_error:
+
+        try:
+            repaired_output = repair_llm_output(
+                request.text,
+                raw_output,
+                str(first_error),
+            )
+
+            parsed_repaired = parse_json(repaired_output)
+            validated_repaired = validate_output(parsed_repaired)
+
+            return validated_repaired
+
+        except (ValueError, ValidationError) as second_error:
+
+            quarantine_failure(
+                input_text=request.text,
+                raw_output=raw_output,
+                repaired_output=repaired_output,
+                error=str(second_error),
+            )
+
+            raise HTTPException(
+                status_code=422,
+                detail="LLM output could not be parsed or validated after one repair attempt.",
+            )

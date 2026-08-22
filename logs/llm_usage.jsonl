@@ -6,3 +6,12 @@
 {"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 589, "output_tokens": 155, "duration_ms": 21774.89, "repair": false}
 {"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 589, "output_tokens": 701, "duration_ms": 5438.39, "repair": false}
 {"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 589, "output_tokens": 156, "duration_ms": 25880.72, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 569, "output_tokens": 553, "duration_ms": 13422.18, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 601, "output_tokens": 78, "duration_ms": 4741.3, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 596, "output_tokens": 718, "duration_ms": 13229.4, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 594, "output_tokens": 746, "duration_ms": 5005.84, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 584, "output_tokens": 311, "duration_ms": 2556.79, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 581, "output_tokens": 1404, "duration_ms": 12355.99, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 587, "output_tokens": 66, "duration_ms": 2847.98, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 579, "output_tokens": 747, "duration_ms": 4178.65, "repair": false}
+{"prompt_version": "resume-extraction-v1", "model": "openrouter/free", "input_tokens": 774, "output_tokens": 230, "duration_ms": 3069.16, "repair": true}

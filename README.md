@@ -162,7 +162,7 @@ http://localhost:8000/docs
 # API Reference
 
 | Method | Endpoint               | Description                               | Authentication |
-| ------ | ---------------------- | ----------------------------------------- | :------------: |
+| ------ | ---------------------- | ------------------------------------------ | :------------: |
 | GET    | `/`                    | API information                           |        ❌       |
 | GET    | `/health`              | Health check                              |        ❌       |
 | GET    | `/tasks`               | Retrieve all tasks                        |        ❌       |
@@ -265,42 +265,13 @@ docker compose up --build
 
 ---
 
-# Features
+# LLM Resume Extraction
 
-* RESTful CRUD Task API
-* PostgreSQL database
-* Dockerized deployment
-* Docker Compose orchestration
-* Persistent data storage
-* Automatic database initialization
-* JWT authentication using Supabase
-* User registration
-* User login
-* User logout
-* Protected endpoints
-* Reusable authentication dependency
-* Interactive Swagger UI
-* Environment variable configuration
+## Provider Configuration
 
----
+The LLM provider is configured through `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` environment variables, so the application code does not need to change when switching providers.
 
-# Future Improvements
-
-Potential enhancements include:
-
-* Protecting CRUD task endpoints with authentication
-* Role-based authorization
-* Refresh token support
-* Password reset functionality
-* User-specific task ownership
-* Automated testing with Pytest
-* CI/CD using GitHub Actions
-
-### LLM Provider Configuration
-
-The LLM provider is configured through `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL`, so the application code does not need to change when switching providers.
-
-## LLM Endpoint — Stage 1
+## Stage 1 — `/extract` Endpoint
 
 The API includes a `POST /extract` endpoint that accepts resume text and returns structured resume information.
 
@@ -328,10 +299,6 @@ curl -X POST http://127.0.0.1:8000/extract \
 
 The endpoint returns `400` with a JSON message naming the invalid or missing field. Invalid requests are rejected before any LLM call is made.
 
-### Provider Configuration
-
-The LLM provider is configured through environment variables rather than being hard-coded, allowing the application to switch providers without changing the application code.
-
 ## Stage 2 — Prompt v1 Testing
 
 The resume extraction prompt is stored in:
@@ -340,20 +307,55 @@ The resume extraction prompt is stored in:
 
 The prompt is loaded as a system message, while the resume text is sent separately as a user message.
 
-### Test results
+### Test Results
 
-Three different resume inputs were tested with the real LLM.
+Three different resume inputs were tested with the real LLM:
 
-- Clear resume: correctly extracted the available information.
-- Incomplete resume: handled missing information without inventing values.
-- Messy resume: extracted the available fields and handled missing information appropriately.
+* **Clear resume** — correctly extracted the available information.
+* **Incomplete resume** — handled missing information without inventing values.
+* **Messy resume** — extracted the available fields and handled missing information appropriately.
 
-The model was configured with a temperature of 0.2 for more consistent responses.
+The model was configured with a temperature of `0.2` for more consistent responses.
 
-The prompt is versioned as `resume-extraction-v1.md`.
-
+### Reliability
 
 LLM retries are handled explicitly by the application; SDK automatic retries are disabled (`max_retries=0`).
+
+---
+
+# Features
+
+* RESTful CRUD Task API
+* PostgreSQL database
+* Dockerized deployment
+* Docker Compose orchestration
+* Persistent data storage
+* Automatic database initialization
+* JWT authentication using Supabase
+* User registration
+* User login
+* User logout
+* Protected endpoints
+* Reusable authentication dependency
+* Interactive Swagger UI
+* Environment variable configuration
+* LLM-powered resume extraction endpoint
+
+---
+
+# Future Improvements
+
+Potential enhancements include:
+
+* Protecting CRUD task endpoints with authentication
+* Role-based authorization
+* Refresh token support
+* Password reset functionality
+* User-specific task ownership
+* Automated testing with Pytest
+* CI/CD using GitHub Actions
+
+---
 
 # Author
 
@@ -361,4 +363,4 @@ LLM retries are handled explicitly by the application; SDK automatic retries are
 
 FlyRank AI Backend Engineering Internship
 
-This project represents the progressive development of a FastAPI backend throughout the internship, evolving from a basic CRUD API into a production-style REST API featuring PostgreSQL, Docker, Supabase JWT authentication, protected routes, and interactive Swagger documentation.
+This project represents the progressive development of a FastAPI backend throughout the internship, evolving from a basic CRUD API into a production-style REST API featuring PostgreSQL, Docker, Supabase JWT authentication, protected routes, interactive Swagger documentation, and LLM-powered resume extraction.

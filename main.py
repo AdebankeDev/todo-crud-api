@@ -359,6 +359,13 @@ def logout(user=Depends(get_current_user)):
 )
 def extract_resume_endpoint(request: ResumeExtractRequest):
 
+    if os.getenv("LLM_ENABLED", "true").lower() != "true":
+        raise HTTPException(
+            status_code=503,
+            detail="LLM extraction is temporarily disabled.",
+        )
+    
+
     if os.getenv("LLM_STUB") == "1":
         return ResumeExtractResponse(
             name="Ada Lovelace",

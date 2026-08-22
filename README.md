@@ -352,6 +352,9 @@ The model was configured with a temperature of 0.2 for more consistent responses
 
 The prompt is versioned as `resume-extraction-v1.md`.
 
+
+LLM retries are handled explicitly by the application; SDK automatic retries are disabled (`max_retries=0`).
+
 # Author
 
 **Adebanke Peke**
